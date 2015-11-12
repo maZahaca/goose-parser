@@ -1,7 +1,8 @@
-var Parser = require('../lib/Parser');
-var Actions = require('../lib/Actions');
-var Transformations = require('../lib/Transformations');
-var PhantomEnvironment = require('../lib/PhantomEnvironment');
+var libFolder = process.env.JSCOV ? '../lib-cov/' : '../lib/';
+var Parser = require(libFolder + 'Parser');
+var Actions = require(libFolder + 'Actions');
+var Transformations = require(libFolder + 'Transformations');
+var PhantomEnvironment = require(libFolder + 'PhantomEnvironment');
 var chai = require('chai');
 var expect = chai.expect;
 var path = require('path');
@@ -245,6 +246,131 @@ describe('Parser', function () {
                     }, this);
                 });
         });
+
+        it('parse page with page pagination and maxPagesCount', function () {
+            var parser = new Parser({
+                environment: env,
+                pagination: {
+                    type: 'page',
+                    scope: '.pageable .pagination div',
+                    pageScope: '.pageable .content .scope-pagination-passed',
+                    maxPagesCount: 3
+                }
+            });
+            return parser.parse(
+                {
+                    rules: {
+                        scope: '.pageable > .content > div.scope-pagination-passed',
+                        collection: [[
+                            {name: 'column1', scope: 'div.scope-pagination-passed-column1'},
+                            {
+                                name: 'sub-column',
+                                scope: 'div:last-child',
+                                collection: [
+                                    {name: 'column2', scope: 'div.scope-pagination-passed-column2'},
+                                    {name: 'column3', scope: 'div.scope-pagination-passed-column3'},
+                                    {name: 'column4', scope: 'div.scope-pagination-passed-column4'}
+                                ]
+                            }
+                        ]]
+                    }
+                }
+            ).then(function (found) {
+                    expect(found).to.be.instanceOf(Array);
+                    expect(found.length).equal(3);
+
+                    found.forEach(function (item, i) {
+                        expect(item.column1, 'row' + i).equal('column1' + (i + 1));
+                        for (var i = 2; i <= 4; i++) {
+                            var val = 'column' + i;
+                            expect(item['sub-column'][val], 'row' + i).equal(val);
+                        }
+                    }, this);
+                });
+        });
+
+        it('parse page with page pagination and maxResultsCount', function () {
+            var parser = new Parser({
+                environment: env,
+                pagination: {
+                    type: 'page',
+                    scope: '.pageable .pagination div',
+                    pageScope: '.pageable .content .scope-pagination-passed',
+                    maxResultsCount: 3
+                }
+            });
+            return parser.parse(
+                {
+                    rules: {
+                        scope: '.pageable > .content > div.scope-pagination-passed',
+                        collection: [[
+                            {name: 'column1', scope: 'div.scope-pagination-passed-column1'},
+                            {
+                                name: 'sub-column',
+                                scope: 'div:last-child',
+                                collection: [
+                                    {name: 'column2', scope: 'div.scope-pagination-passed-column2'},
+                                    {name: 'column3', scope: 'div.scope-pagination-passed-column3'},
+                                    {name: 'column4', scope: 'div.scope-pagination-passed-column4'}
+                                ]
+                            }
+                        ]]
+                    }
+                }
+            ).then(function (found) {
+                    expect(found).to.be.instanceOf(Array);
+                    expect(found.length).equal(3);
+
+                    found.forEach(function (item, i) {
+                        expect(item.column1, 'row' + i).equal('column1' + (i + 1));
+                        for (var i = 2; i <= 4; i++) {
+                            var val = 'column' + i;
+                            expect(item['sub-column'][val], 'row' + i).equal(val);
+                        }
+                    }, this);
+                });
+        });
+
+        it('parse page with page href pagination', function () {
+            var parser = new Parser({
+                environment: env,
+                pagination: {
+                    type: 'pageHref',
+                    scope: '.pageable-simple .pagination div',
+                    pageScope: '.pageable-simple .content .scope-pagination-passed'
+                }
+            });
+            return parser.parse(
+                {
+                    rules: {
+                        scope: '.pageable-simple > .content > div.scope-pagination-passed',
+                        collection: [[
+                            {name: 'column1', scope: 'div.scope-pagination-passed-column1'},
+                            {
+                                name: 'sub-column',
+                                scope: 'div:last-child',
+                                collection: [
+                                    {name: 'column2', scope: 'div.scope-pagination-passed-column2'},
+                                    {name: 'column3', scope: 'div.scope-pagination-passed-column3'},
+                                    {name: 'column4', scope: 'div.scope-pagination-passed-column4'}
+                                ]
+                            }
+                        ]]
+                    }
+                }
+            ).then(function (found) {
+                    expect(found).to.be.instanceOf(Array);
+                    expect(found.length).equal(10);
+
+                    found.forEach(function (item, i) {
+                        expect(item.column1, 'row' + i).equal('column1' + (i + 1));
+                        for (var i = 2; i <= 4; i++) {
+                            var val = 'column' + i;
+                            expect(item['sub-column'][val], 'row' + i).equal(val);
+                        }
+                    }, this);
+                });
+        });
     });
 });
 
@@ -328,7 +454,7 @@ describe('Actions', function () {
                     });
 
                     actions.addAction('custom-click', function(options) {
-                        return this._env.evaluateJs(options.scope, function (selector) {
+                        return this._env.evaluateJs(options.scope, /* @covignore */ function (selector) {
                             var nodes = Sizzle(selector);
                             for (var i = 0, l = nodes.length; i < l; i++) {
                                 nodes[i].click();
