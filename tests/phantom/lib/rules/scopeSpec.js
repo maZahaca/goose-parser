@@ -82,4 +82,71 @@ describe('Using scope rule, the parser', () => {
         });
         expect(result).to.deep.equal(['text1', 'text2']);
     });
+
+    it('should parse id field', async () => {
+        setServerResponse(`
+            <ul>
+                <li><span>text1</span></li>
+                <li><span>text2</span></li>
+            </ul>
+        `);
+        const result = await parser.parse({
+            rules: {
+                scope: 'li',
+                collection: [[
+                    {
+                        scope: 'span',
+                        id: true
+                    }
+                ]]
+            }
+        });
+        expect(result).to.deep.equal([
+            {
+                _id: 'text1'
+            },
+            {
+                _id: 'text2'
+            }
+        ]);
+    });
+
+    it('should parse id field as a function', async () => {
+        setServerResponse(`
+            <ul>
+                <li><span>text1</span></li>
+                <li><span>text2</span></li>
+            </ul>
+        `);
+
+        let id = 0;
+
+        function idGenerator (rule, result) {
+            expect(rule).to.deep.equal({
+                scope: 'span',
+                id: idGenerator
+            });
+            return result + ++id;
+        }
+
+        const result = await parser.parse({
+            rules: {
+                scope: 'li',
+                collection: [[
+                    {
+                        scope: 'span',
+                        id: idGenerator
+                    }
+                ]]
+            }
+        });
+        expect(result).to.deep.equal([
+            {
+                _id: 'text11'
+            },
+            {
+                _id: 'text22'
+            }
+        ]);
+    });
 });
