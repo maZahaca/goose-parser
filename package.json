@@ -8,6 +8,7 @@
   },
   "keywords": [
     "phantomjs",
+    "jsdom",
     "browser",
     "parser",
     "crawler",
